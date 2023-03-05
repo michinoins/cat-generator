@@ -1,60 +1,48 @@
+import { GetServerSideProps, NextPage } from 'next';
 import { useState } from 'react';
-import type { NextPage, GetServerSideProps } from 'next';
-interface CatCategory {
-  id: number;
-  name: string;
-}
-interface SearchCatImage {
-  breeds: string[];
-  categories: CatCategory[];
-  id: string;
-  url: string;
-  width: number;
-  height: number;
-}
-type SearchCatImageResponse = SearchCatImage[];
-const fetchCatImage = async (): Promise<SearchCatImage> => {
-  const res = await fetch('https://api.thecatapi.com/v1/images/search');
-  const result = (await res.json()) as SearchCatImageResponse;
-  return result[0];
+import styles from './index.module.css';
+
+type Property = {
+  initialImageUrl: string;
 };
-interface IndexPageProps {
-  initialCatImageUrl: string;
-}
-const IndexPage: NextPage<IndexPageProps> = ({ initialCatImageUrl }) => {
-  const [catImageUrl, setCatImageUrl] = useState(initialCatImageUrl);
+
+const IndexPage: NextPage<Property> = ({ initialImageUrl }) => {
+  const [imageUrl, setImageUrl] = useState(initialImageUrl);
+  const [loading, setLoading] = useState(false);
   const handleClick = async () => {
-    const image = await fetchCatImage();
-    setCatImageUrl(image.url);
+    setLoading(true);
+    const newImage = await fetchImage();
+    setImageUrl(newImage.url);
+    setLoading(false);
   };
   return (
-    <div>
-      <button
-        onClick={handleClick}
-        style={{
-          backgroundColor: '#319795',
-          border: 'none',
-          borderRadius: '4px',
-          color: 'white',
-          padding: '4px 8px',
-        }}
-      >
-        きょうのにゃんこ! 🐱
-      </button>{' '}
-      <div style={{ marginTop: 8 }}>
-        <img src={catImageUrl} width={500} height='auto' />
+    <div className={styles.page}>
+      <button onClick={handleClick} className={styles.button}>
+        他のにゃんこも見る
+      </button>
+      <div className={styles.frame}>
+        {loading || <img src={imageUrl} className={styles.img} />}
       </div>
     </div>
   );
 };
-
-export const getServerSideProps: GetServerSideProps<IndexPageProps> =
-  async () => {
-    const catImage = await fetchCatImage();
-    return {
-      props: {
-        initialCatImageUrl: catImage.url,
-      },
-    };
-  };
 export default IndexPage;
+
+export const getServerSideProps: GetServerSideProps<Property> = async () => {
+  const image = await fetchImage();
+  return {
+    props: {
+      initialImageUrl: image.url,
+    },
+  };
+};
+type Image = {
+  url: string;
+};
+
+const fetchImage = async (): Promise<Image> => {
+  const res = await fetch('https://api.thecatapi.com/v1/images/search');
+  const images = await res.json();
+  console.log(images);
+  return images[0];
+};
